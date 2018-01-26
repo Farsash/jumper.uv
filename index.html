@@ -1,0 +1,139 @@
+<html>
+	<head>
+		<title>Jumper.ui v0.1</title>
+		<style>
+			body { margin: 0; }
+			canvas { width: 100%; height: 100% }
+		</style>
+	</head>
+	<body>
+		<script src="js/three.min.js"></script>
+        <script src="js/OBJLoader.js"></script>
+        <script src="js/jumper.uv.js"></script>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+
+        <script>
+            var scene, camera, renderer;
+            var group;
+
+            // Mouse move
+            var mouseX = mouseY = 0;
+            var targetX = targetX = 0;
+            var windowHalfX = window.innerWidth / 2;
+            var windowHalfY = window.innerHeight / 2;
+            // Mouse move end
+
+            // Loaders 
+            var loader = new THREE.OBJLoader();
+
+
+            // Список заданий
+            var taskJump ={
+                glow: ['A3', 'A2'],
+                light: ['A1']
+            }
+            
+            Init();
+            animate();
+            ObjAdd();
+            
+            var ofstPos = 0;
+            function sec( ) {
+                
+                var obj = scene.getObjectByName('glow');
+                obj.updateMatrix();
+                
+                
+                if (ofstPos <= taskJump['glow'].length - 1){
+                    obj.geometry.attributes.uv = Jumper( obj.geometry.attributes.uv, taskJump['glow'][ofstPos] );
+                    obj.geometry.attributes.uv.needsUpdate = true;
+                    ofstPos += 1;
+                } else {
+                    ofstPos = 0;
+                } 
+                
+            }
+            
+            
+            function second_passed() {
+              setInterval(sec, 500);
+            }
+            
+            setTimeout(second_passed, 500) 
+
+
+            document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+
+            function Init(){
+
+                group = new THREE.Group();
+
+                scene = new THREE.Scene();
+                camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 5000 );
+
+                renderer = new THREE.WebGLRenderer({ antialias: true });
+                renderer.setClearColor( 0x000000 );
+                renderer.setSize( window.innerWidth, window.innerHeight );
+                document.body.appendChild( renderer.domElement );
+
+                camera.position.z = 0;
+                camera.position.x = 70;
+                camera.position.y = 40;
+                camera.lookAt(new THREE.Vector3(0,0,0));
+
+            }
+
+            function ObjAdd(){
+
+                var texture = new THREE.TextureLoader().load( "textures/light_bake.jpg" );
+                texture.wrapS = THREE.RepeatWrapping;
+                texture.wrapT = THREE.RepeatWrapping;
+                //texture.needsUpdate = true;
+
+                loader.load(
+                // resource URL
+                'models/light.obj',
+                // called when resource is loaded
+                function ( object ) {
+                    object.children.forEach(function(e) {                        
+                        e.material = new THREE.MeshBasicMaterial( { color: 0xffffff, map: texture });
+                        for (var obj in taskJump){
+                            if (obj === e.name){
+                                e.geometry.attributes.uv = Jumper( e.geometry.attributes.uv, taskJump[obj][0] );
+                            }
+                        }
+                    });
+                    
+                    object.scale.set(2.5, 2.5, 2.5);
+                    group.add( object);
+                    scene.add( group );
+                    
+                });
+
+            }
+
+            function animate() {
+
+                requestAnimationFrame( animate );
+
+                targetX = -mouseX * .0006;
+                targetY = -mouseY * .0006;
+
+                group.rotation.y += 0.05 * ( targetX - group.rotation.y );
+                group.rotation.x += 0.05 * ( targetY - group.rotation.x );
+
+                renderer.render(scene, camera);
+
+            };
+
+            function onDocumentMouseMove( event ) {	
+
+                mouseX = ( event.clientX - windowHalfX );
+                mouseY = ( event.clientY - windowHalfY );
+
+            }
+
+
+        </script>
+	</body>
+</html>
